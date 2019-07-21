@@ -3,7 +3,7 @@ Todolist:Pytorch实现各种NN model
 目前已经实现:  
 
 | 序号 | 模型 |  
-| :-----| ----: |  
+| :-----| :---- |  
 | 01 | fasttext |
 | 02 | textCNN |
 | 03 | textRNN |
