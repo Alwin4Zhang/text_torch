@@ -11,3 +11,4 @@ Todolist:Pytorch实现各种NN model
 | 05 | textRNN_attention |
 | 06 | Siamese lstm |
 | 07 | ESIM |
+| 08 | BiLSTM_CRF |
