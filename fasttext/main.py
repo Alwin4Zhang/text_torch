@@ -10,7 +10,7 @@ path_root = dirname(__file__)
 import sys
 from dataset import *
 
-parser = argparse.ArgumentParser(description='TextCNN text classifier')
+parser = argparse.ArgumentParser(description='fasetext text classifier')
 # learning
 parser.add_argument('-lr', type=float, default=1e-3, help='initial learning rate [default:0.001]')
 parser.add_argument('-epochs', type=int, default=256, help='number of epochs for train [default:256]')
