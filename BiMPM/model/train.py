@@ -7,10 +7,13 @@ from torch.autograd import Variable
 import torch.nn.functional as F
 import torch.nn as nn
 from torchtext.vocab import Vectors
+import torchtext.vocab as vocab
 from torch.utils.data import DataLoader
 from dataset import Dictionary, MyDataset
 from model import BiMPM
 from os.path import dirname, join as join_path
+import gensim
+import numpy as np
 
 data_dir = dirname(dirname(__file__))
 
@@ -39,11 +42,13 @@ def get_args():
                         help='size of word embeddings')
     parser.add_argument('--char_dim', type=int, default=300,
                         help='size of word embeddings')
+    parser.add_argument('--char_hidden_size', type=int, default=50,
+                        help='number of hidden units per layer')
     parser.add_argument('--hidden_size', type=int, default=100,
                         help='number of hidden units per layer')
     parser.add_argument('--num_layers', type=int, default=1,
                         help='number of layers in BiLSTM')
-    parser.add_argument('--linear_size', type=int, default=128,
+    parser.add_argument('--class_size', type=int, default=2,
                         help='number of linear size')
     parser.add_argument('--dropout', type=float, default=0.5,
                         help='dropout applied to layers (0 = no dropout)')
@@ -75,7 +80,9 @@ def get_args():
 def load_word_vectors(model_path):
     vectors = Vectors(name=model_path)
     return vectors
-
+    # model = gensim.models.KeyedVectors.load_word2vec_format(model_path)
+    # weights = torch.FloatTensor(model.vectors)
+    # return weights
 
 def metrics(y, y_pred):
     TP = ((y_pred == 1) & (y == 1)).sum().float()
@@ -119,7 +126,7 @@ def train(train_iter, dev_iter, model, args):
                 x1, x2, y = Variable(x1).cuda(), Variable(x2).cuda(), Variable(y).cuda()
             y = torch.squeeze(y, 1).float()
             optimizer.zero_grad()
-            score = model(x1, x2)
+            score = model([x1, x2])
             # print(score)
             loss = F.binary_cross_entropy_with_logits(score, y)
             loss = Variable(loss, requires_grad=True)
@@ -223,17 +230,28 @@ if __name__ == "__main__":
     assert os.path.exists(args.train_data)
     assert os.path.exists(args.val_data)
 
-    if args.static:
-        vectors = load_word_vectors(args.word_vector)
-        args.vectors = vectors
-        print(vectors)
-
     # 词语级别
     dictionary = Dictionary(join_path(data_dir, 'data/atec_nlp_sim_train.csv'), char_level=False)
     args.word_vocab_size = len(dictionary)
     best_val_loss = None
     best_f1 = None
     n_token = len(dictionary)
+
+    if args.static:
+        # vectors = load_word_vectors(args.word_vector)
+        # text_field.build_vocab()
+
+        model = gensim.models.KeyedVectors.load_word2vec_format(args.word_vector)
+        trans_tensor = torch.FloatTensor(len(dictionary.word2idx),64)
+        for i,w in enumerate(dictionary.word2idx):
+            if w in model:
+                trans_tensor[i] = torch.Tensor(model[w])
+            else:
+                trans_tensor[i] = torch.zeros([64])
+        args.vectors = trans_tensor
+        # dictionary.word2idx
+        # 'cache', 'dim', 'itos', 'stoi', 'unk_init', 'vectors'
+        # print(vectors.stoi,vectors.vectors)
 
     # 字符级别
     dictionary = Dictionary(join_path(data_dir, 'data/atec_nlp_sim_train.csv'), char_level=True)

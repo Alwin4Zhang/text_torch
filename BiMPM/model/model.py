@@ -13,12 +13,13 @@ class BiMPM(nn.Module):
         char_vocab_size = args.char_vocab_size
         char_dim = args.char_dim
         self.l = self.args.num_perspective
+        self.d = self.args.word_dim + 1 * self.args.char_hidden_size
 
         # ----- Word Representation Layer -----
         self.char_emb = nn.Embedding(char_vocab_size, char_dim, padding_idx=0)
 
         if self.args.static:
-            self.word_embedding = nn.Embedding(word_vocab_size, word_dim).from_pretrained(args.vectors)
+            self.word_emb = nn.Embedding(word_vocab_size, word_dim).from_pretrained(args.vectors)
 
         self.char_LSTM = nn.LSTM(
             input_size=self.args.char_dim,
