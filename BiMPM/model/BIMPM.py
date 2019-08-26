@@ -3,23 +3,22 @@ import torch.nn as nn
 import torch.nn.functional as F
 
 
-class BiMPM(nn.Module):
-    def __init__(self, args):
-        super(BiMPM, self).__init__()
-        self.args = args
-        word_vocab_size = self.args.word_vocab_size
-        word_dim = self.args.word_dim
+class BIMPM(nn.Module):
+    def __init__(self, args, data):
+        super(BIMPM, self).__init__()
 
-        char_vocab_size = args.char_vocab_size
-        char_dim = args.char_dim
+        self.args = args
+        self.d = self.args.word_dim + int(self.args.use_char_emb) * self.args.char_hidden_size
         self.l = self.args.num_perspective
-        self.d = self.args.word_dim + 1 * self.args.char_hidden_size
 
         # ----- Word Representation Layer -----
-        self.char_emb = nn.Embedding(char_vocab_size, char_dim, padding_idx=0)
+        self.char_emb = nn.Embedding(args.char_vocab_size, args.char_dim, padding_idx=0)
 
-        if self.args.static:
-            self.word_emb = nn.Embedding(word_vocab_size, word_dim).from_pretrained(args.vectors)
+        self.word_emb = nn.Embedding(args.word_vocab_size, args.word_dim)
+        # initialize word embedding with GloVe
+        self.word_emb.weight.data.copy_(data.TEXT.vocab.vectors)
+        # no fine-tuning for word vectors
+        self.word_emb.weight.requires_grad = False
 
         self.char_LSTM = nn.LSTM(
             input_size=self.args.char_dim,
