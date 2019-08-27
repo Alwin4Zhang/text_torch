@@ -84,6 +84,7 @@ def load_word_vectors(model_path):
     # weights = torch.FloatTensor(model.vectors)
     # return weights
 
+
 def metrics(y, y_pred):
     TP = ((y_pred == 1) & (y == 1)).sum().float()
     TN = ((y_pred == 0) & (y == 0)).sum().float()
@@ -242,8 +243,8 @@ if __name__ == "__main__":
         # text_field.build_vocab()
 
         model = gensim.models.KeyedVectors.load_word2vec_format(args.word_vector)
-        trans_tensor = torch.FloatTensor(len(dictionary.word2idx),64)
-        for i,w in enumerate(dictionary.word2idx):
+        trans_tensor = torch.FloatTensor(len(dictionary.word2idx), 64)
+        for i, w in enumerate(dictionary.word2idx):
             if w in model:
                 trans_tensor[i] = torch.Tensor(model[w])
             else:

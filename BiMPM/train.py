@@ -65,9 +65,9 @@ def train(args, data):
             char_p = Variable(torch.LongTensor(data.characterize(s1)))
             char_h = Variable(torch.LongTensor(data.characterize(s2)))
 
-            if args.gpu > -1:
-                char_p = char_p.cuda(args.gpu)
-                char_h = char_h.cuda(args.gpu)
+            if args.cuda:
+                char_p = char_p.cuda()
+                char_h = char_h.cuda()
 
             kwargs['char_p'] = char_p
             kwargs['char_h'] = char_h
@@ -126,7 +126,7 @@ def main():
                         help='max length of input sentences model can accept, if -1, it accepts any length')
     parser.add_argument('--num-perspective', default=20, type=int)
     parser.add_argument('--print-freq', default=500, type=int)
-    parser.add_argument('--use-char-emb', default=False, action='store_true')
+    parser.add_argument('--use-char-emb', default=True, action='store_true')
     parser.add_argument('--word-dim', default=64, type=int)
     # device
     parser.add_argument('-device', type=int, default=1,
@@ -153,7 +153,7 @@ def main():
     setattr(args, 'max_word_len', data.max_word_len)
     setattr(args, 'model_time', strftime('%H:%M:%S', gmtime()))
 
-    args.cuda = args.device != -1 or torch.cuda.is_available()
+    args.cuda = True if torch.cuda.is_available() else False
 
     print('training start!')
     best_model = train(args, data)
