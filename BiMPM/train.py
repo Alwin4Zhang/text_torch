@@ -36,6 +36,7 @@ def train(args, data):
 
     iterator = data.train_iter
     for i, batch in enumerate(iterator):
+        print(batch)
         present_epoch = int(iterator.epoch)
         if present_epoch == args.epoch:
             break
@@ -57,7 +58,7 @@ def train(args, data):
             if s2.size()[1] > args.max_sent_len:
                 s2 = s2[:, :args.max_sent_len]
 
-        if torch.cuda.is_available():
+        if args.cuda:
             s1, s2 = s1.cuda(), s2.cuda()
         kwargs = {'p': s1, 'h': s2}
 
@@ -73,14 +74,21 @@ def train(args, data):
             kwargs['char_h'] = char_h
 
         pred = model(**kwargs)
-        # print(pred)
 
         optimizer.zero_grad()
         # batch_loss = criterion(pred, batch.label)
-        batch_loss = F.cross_entropy(pred, batch.label)
-        print(batch_loss)
-        loss += batch_loss.data[0]
-        batch_loss.backward()
+        origin_label = Variable(batch.label)
+        if args.cuda:
+            print('--' * 30)
+            origin_label = torch.squeeze(origin_label, -1).float()
+            origin_label.cuda()
+            print(origin_label, origin_label.shape)
+        loss = F.cross_entropy(pred, origin_label)
+        # loss = nn.CrossEntropyLoss(pred, origin_label)
+        # loss = F.binary_cross_entropy_with_logits(pred, origin_label)
+        print(loss)
+        loss += loss.data[0]
+        loss.backward()
         optimizer.step()
 
         if (i + 1) % args.print_freq == 0:
@@ -129,8 +137,8 @@ def main():
     parser.add_argument('--use-char-emb', default=True, action='store_true')
     parser.add_argument('--word-dim', default=64, type=int)
     # device
-    parser.add_argument('-device', type=int, default=1,
-                        help='device to use for iterable data,-1 mean cpu [default:-1]')
+    # parser.add_argument('-device', type=int, default=1,
+    #                     help='device to use for iterable data,-1 mean cpu [default:-1]')
     args = parser.parse_args()
 
     # if args.data_type == 'SNLI':

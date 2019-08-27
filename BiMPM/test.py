@@ -7,6 +7,9 @@ import torch.nn.functional as F
 
 from model.BIMPM import BIMPM
 from model.utils import DataSet
+from os.path import join as join_path, dirname
+from torchtext.vocab import Vectors
+from time import gmtime, strftime
 
 
 def test(model, args, data, mode='test'):
@@ -35,9 +38,12 @@ def test(model, args, data, mode='test'):
             char_p = Variable(torch.LongTensor(data.characterize(s1)))
             char_h = Variable(torch.LongTensor(data.characterize(s2)))
 
-            if args.gpu > -1:
-                char_p = char_p.cuda(args.gpu)
-                char_h = char_h.cuda(args.gpu)
+            # if args.gpu > -1:
+            #     char_p = char_p.cuda(args.gpu)
+            #     char_h = char_h.cuda(args.gpu)
+            if args.cuda:
+                char_p = char_p.cuda()
+                char_h = char_h.cuda()
 
             kwargs['char_p'] = char_p
             kwargs['char_h'] = char_h
@@ -45,7 +51,10 @@ def test(model, args, data, mode='test'):
         pred = model(**kwargs)
 
         # batch_loss = criterion(pred, batch.label)
-        batch_loss = F.cross_entropy(pred, batch.label)
+        origin_label = batch.label
+        if torch.cuda.is_available():
+            origin_label.cuda()
+        batch_loss = F.cross_entropy(pred, origin_label)
         loss += batch_loss.data[0]
 
         _, pred = pred.max(dim=1)
@@ -53,7 +62,7 @@ def test(model, args, data, mode='test'):
         size += len(pred)
 
     acc /= size
-    acc = acc.cpu().data[0]
+    # acc = acc.cpu().data[0]
     return loss, acc
 
 
@@ -79,7 +88,7 @@ if __name__ == '__main__':
     parser.add_argument('--hidden-size', default=100, type=int)
     parser.add_argument('--learning-rate', default=0.001, type=float)
     parser.add_argument('--num-perspective', default=20, type=int)
-    parser.add_argument('--use-char-emb', default=False, action='store_true')
+    parser.add_argument('--use-char-emb', default=True, action='store_true')
     parser.add_argument('--word-dim', default=64, type=int)
 
     parser.add_argument('--model-path', required=True)
@@ -92,14 +101,29 @@ if __name__ == '__main__':
     # elif args.data_type == 'Quora':
     #     print('loading Quora data...')
     #     data = Quora(args)
+    # data = DataSet(args)
+    #
+    # setattr(args, 'char_vocab_size', len(data.char_vocab))
+    # setattr(args, 'word_vocab_size', len(data.TEXT.vocab))
+    # setattr(args, 'class_size', len(data.LABEL.vocab))
+    # setattr(args, 'max_word_len', data.max_word_len)
+    #
+    # print('loading model...')
+    # model = load_model(args, data)
+
+    model_path = join_path(dirname(__file__), 'data/word_vec')
+    vectors = Vectors(model_path)
+    setattr(args, 'vectors', vectors)
     data = DataSet(args)
 
     setattr(args, 'char_vocab_size', len(data.char_vocab))
     setattr(args, 'word_vocab_size', len(data.TEXT.vocab))
     setattr(args, 'class_size', len(data.LABEL.vocab))
     setattr(args, 'max_word_len', data.max_word_len)
+    setattr(args, 'model_time', strftime('%H:%M:%S', gmtime()))
 
-    print('loading model...')
+    args.cuda = True if torch.cuda.is_available() else False
+
     model = load_model(args, data)
 
     _, acc = test(model, args, data)

@@ -69,5 +69,5 @@ class DataSet(object):
         :param batch: Pytorch Variable with shape (batch, seq_len)
         :return: Pytorch Variable with shape (batch, seq_len, max_word_len)
         """
-        batch = batch.data.numpy().astype(int).tolist()  # .cpu()
+        batch = batch.data.cpu().numpy().astype(int).tolist()
         return [[self.characterized_words[w] for w in words] for words in batch]
