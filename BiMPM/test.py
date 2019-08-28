@@ -18,29 +18,21 @@ def test(model, args, data, mode='test'):
     else:
         iterator = iter(data.test_iter)
 
-    # criterion = nn.CrossEntropyLoss()
-    # criterion = F.cross_entropy()
     model.eval()
     acc, loss, size = 0, 0, 0
 
     for batch in iterator:
-        # if args.data_type == 'SNLI':
-        #     s1, s2 = 'premise', 'hypothesis'
-        # else:
-        s1, s2 = 'q1', 'q2'
+        s1, s2, label = 'q1', 'q2', 'label'
 
-        s1, s2 = getattr(batch, s1), getattr(batch, s2)
-        if torch.cuda.is_available():
-            s1, s2 = s1.cuda(), s2.cuda()
+        s1, s2, label = getattr(batch, s1), getattr(batch, s2), getattr(batch, label)
+        if args.cuda:
+            s1, s2, label = s1.cuda(), s2.cuda(), label.cuda()
         kwargs = {'p': s1, 'h': s2}
 
         if args.use_char_emb:
             char_p = Variable(torch.LongTensor(data.characterize(s1)))
             char_h = Variable(torch.LongTensor(data.characterize(s2)))
 
-            # if args.gpu > -1:
-            #     char_p = char_p.cuda(args.gpu)
-            #     char_h = char_h.cuda(args.gpu)
             if args.cuda:
                 char_p = char_p.cuda()
                 char_h = char_h.cuda()
@@ -49,20 +41,20 @@ def test(model, args, data, mode='test'):
             kwargs['char_h'] = char_h
 
         pred = model(**kwargs)
+        batch_loss = F.cross_entropy(pred, label)
+        loss += batch_loss.data
 
-        # batch_loss = criterion(pred, batch.label)
-        origin_label = batch.label
-        if torch.cuda.is_available():
-            origin_label.cuda()
-        batch_loss = F.cross_entropy(pred, origin_label)
-        loss += batch_loss.data[0]
+        # _, pred = pred.max(dim=1)
+        # acc += (pred == batch.label).sum().float()
+        # corrects += (torch.max(logits, 1)[1].view(target.size()).data == target.data).sum()
 
-        _, pred = pred.max(dim=1)
-        acc += (pred == batch.label).sum().float()
+        acc += (torch.max(pred, 1)[1].view(label.size()).data == label.data).sum()
         size += len(pred)
-
+    if args.cuda:
+        acc = acc.item()
     acc /= size
-    # acc = acc.cpu().data[0]
+    # acc = acc.cpu().data
+    acc = 100 * acc
     return loss, acc
 
 
@@ -123,6 +115,7 @@ if __name__ == '__main__':
     setattr(args, 'model_time', strftime('%H:%M:%S', gmtime()))
 
     args.cuda = True if torch.cuda.is_available() else False
+    # args.cuda = False
 
     model = load_model(args, data)
 

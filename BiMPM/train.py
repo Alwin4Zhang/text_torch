@@ -17,16 +17,11 @@ from test import test
 
 def train(args, data):
     model = BIMPM(args, data)
-    # if args.gpu > -1:
-    #     model.cuda(args.gpu)
     if args.cuda:
-        # torch.cuda.set_device(args.device)
         model = model.cuda()
 
     parameters = filter(lambda p: p.requires_grad, model.parameters())
     optimizer = optim.Adam(parameters, lr=args.learning_rate)
-    # criterion = nn.CrossEntropyLoss()
-    # criterion = F.cross_entropy()
 
     writer = SummaryWriter(log_dir='runs/' + args.model_time)
 
@@ -36,7 +31,6 @@ def train(args, data):
 
     iterator = data.train_iter
     for i, batch in enumerate(iterator):
-        print(batch)
         present_epoch = int(iterator.epoch)
         if present_epoch == args.epoch:
             break
@@ -44,12 +38,9 @@ def train(args, data):
             print('epoch:', present_epoch + 1)
         last_epoch = present_epoch
 
-        # if args.data_type == 'SNLI':
-        #     s1, s2 = 'premise', 'hypothesis'
-        # else:
-        s1, s2 = 'q1', 'q2'
+        s1, s2, label = 'q1', 'q2', 'label'
 
-        s1, s2 = getattr(batch, s1), getattr(batch, s2)
+        s1, s2, label = getattr(batch, s1), getattr(batch, s2), getattr(batch, label)
 
         # limit the lengths of input sentences up to max_sent_len
         if args.max_sent_len >= 0:
@@ -59,7 +50,7 @@ def train(args, data):
                 s2 = s2[:, :args.max_sent_len]
 
         if args.cuda:
-            s1, s2 = s1.cuda(), s2.cuda()
+            s1, s2, label = s1.cuda(), s2.cuda(), label.cuda()
         kwargs = {'p': s1, 'h': s2}
 
         if args.use_char_emb:
@@ -76,18 +67,9 @@ def train(args, data):
         pred = model(**kwargs)
 
         optimizer.zero_grad()
-        # batch_loss = criterion(pred, batch.label)
-        origin_label = Variable(batch.label)
-        if args.cuda:
-            print('--' * 30)
-            origin_label = torch.squeeze(origin_label, -1).float()
-            origin_label.cuda()
-            print(origin_label, origin_label.shape)
-        loss = F.cross_entropy(pred, origin_label)
-        # loss = nn.CrossEntropyLoss(pred, origin_label)
-        # loss = F.binary_cross_entropy_with_logits(pred, origin_label)
-        print(loss)
-        loss += loss.data[0]
+
+        loss = F.cross_entropy(pred, label)
+        loss += loss.data
         loss.backward()
         optimizer.step()
 
@@ -110,7 +92,7 @@ def train(args, data):
                 max_test_acc = test_acc
                 best_model = copy.deepcopy(model)
 
-            loss = 0
+            # loss = 0
             model.train()
 
     writer.close()
@@ -133,22 +115,13 @@ def main():
     parser.add_argument('--max-sent-len', default=-1, type=int,
                         help='max length of input sentences model can accept, if -1, it accepts any length')
     parser.add_argument('--num-perspective', default=20, type=int)
-    parser.add_argument('--print-freq', default=500, type=int)
+    parser.add_argument('--print-freq', default=50, type=int)
     parser.add_argument('--use-char-emb', default=True, action='store_true')
     parser.add_argument('--word-dim', default=64, type=int)
     # device
     # parser.add_argument('-device', type=int, default=1,
     #                     help='device to use for iterable data,-1 mean cpu [default:-1]')
     args = parser.parse_args()
-
-    # if args.data_type == 'SNLI':
-    #     print('loading SNLI data...')
-    #     data = SNLI(args)
-    # elif args.data_type == 'Quora':
-    #     print('loading Quora data...')
-    #     data = Quora(args)
-    # else:
-    #     raise NotImplementedError('only SNLI or Quora data is possible')
 
     model_path = join_path(dirname(__file__), 'data/word_vec')
     vectors = Vectors(model_path)
@@ -162,6 +135,8 @@ def main():
     setattr(args, 'model_time', strftime('%H:%M:%S', gmtime()))
 
     args.cuda = True if torch.cuda.is_available() else False
+    args.device = None if torch.cuda.is_available() else -1
+    # args.cuda = False
 
     print('training start!')
     best_model = train(args, data)

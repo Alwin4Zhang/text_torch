@@ -343,20 +343,20 @@ class BIMPM(nn.Module):
         _, (agg_h_last, _) = self.aggregation_LSTM(mv_h)
 
         # 2 * (2, batch, hidden_size) -> 2 * (batch, hidden_size * 2) -> (batch, hidden_size * 4)
-        # x = torch.cat(
-        #     [agg_p_last.permute(1, 0, 2).contiguous().view(-1, self.args.hidden_size * 2),
-        #      agg_h_last.permute(1, 0, 2).contiguous().view(-1, self.args.hidden_size * 2)], dim=1)
-        # x = self.dropout(x)
-        #
-        # # ----- Prediction Layer -----
-        # x = F.tanh(self.pred_fc1(x))
-        # x = self.dropout(x)
-        # x = self.pred_fc2(x)
-        x = F.cosine_similarity(
-            agg_p_last.permute(1, 0, 2).contiguous().view(-1, self.args.hidden_size * 2),
-            agg_h_last.permute(1, 0, 2).contiguous().view(-1, self.args.hidden_size * 2),
-            dim=1
-        )
-        print(x, x.shape)
+        x = torch.cat(
+            [agg_p_last.permute(1, 0, 2).contiguous().view(-1, self.args.hidden_size * 2),
+             agg_h_last.permute(1, 0, 2).contiguous().view(-1, self.args.hidden_size * 2)], dim=1)
+        x = self.dropout(x)
+
+        # ----- Prediction Layer -----
+        x = F.tanh(self.pred_fc1(x))
+        x = self.dropout(x)
+        x = self.pred_fc2(x)
+        # x = F.cosine_similarity(
+        #     agg_p_last.permute(1, 0, 2).contiguous().view(-1, self.args.hidden_size * 2),
+        #     agg_h_last.permute(1, 0, 2).contiguous().view(-1, self.args.hidden_size * 2),
+        #     dim=1
+        # )
+        # print(x, x.shape)
 
         return x

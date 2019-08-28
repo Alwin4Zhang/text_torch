@@ -35,7 +35,7 @@ class DataSet(object):
         self.train_iter, self.dev_iter, self.test_iter = \
             data.BucketIterator.splits((self.train, self.dev, self.test),
                                        batch_sizes=[args.batch_size] * 3,
-                                       # device=args.gpu,
+                                       device=args.gpu,
                                        sort_key=sort_key)  # BucketIterator
 
         self.max_word_len = max([len(w) for w in self.TEXT.vocab.itos])
