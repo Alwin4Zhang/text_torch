@@ -111,6 +111,7 @@ def train(train_iter, dev_iter, model, args):
             if torch.cuda.is_available():
                 x1, x2, y = Variable(x1).cuda(), Variable(x2).cuda(), Variable(y).cuda()
             y = torch.squeeze(y, 1).float()
+            print(y)
             optimizer.zero_grad()
             score = model(x1, x2)
             # print(score)

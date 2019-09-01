@@ -29,71 +29,73 @@ def train(args, data):
     loss, last_epoch = 0, -1
     max_dev_acc, max_test_acc = 0, 0
 
-    iterator = data.train_iter
-    for i, batch in enumerate(iterator):
-        present_epoch = int(iterator.epoch)
-        if present_epoch == args.epoch:
-            break
-        if present_epoch > last_epoch:
-            print('epoch:', present_epoch + 1)
-        last_epoch = present_epoch
+    for epoch in range(args.epoch):
+        print("当前为训练第{%s}轮" % str(epoch + 1))
+        iterator = data.train_iter
+        for i, batch in enumerate(iterator):
+            present_epoch = int(iterator.epoch)
+            if present_epoch == args.epoch:
+                break
+            if present_epoch > last_epoch:
+                print('epoch:', present_epoch + 1)
+            last_epoch = present_epoch
 
-        s1, s2, label = 'q1', 'q2', 'label'
+            s1, s2, label = 'q1', 'q2', 'label'
 
-        s1, s2, label = getattr(batch, s1), getattr(batch, s2), getattr(batch, label)
+            s1, s2, label = getattr(batch, s1), getattr(batch, s2), getattr(batch, label)
 
-        # limit the lengths of input sentences up to max_sent_len
-        if args.max_sent_len >= 0:
-            if s1.size()[1] > args.max_sent_len:
-                s1 = s1[:, :args.max_sent_len]
-            if s2.size()[1] > args.max_sent_len:
-                s2 = s2[:, :args.max_sent_len]
-
-        if args.cuda:
-            s1, s2, label = s1.cuda(), s2.cuda(), label.cuda()
-        kwargs = {'p': s1, 'h': s2}
-
-        if args.use_char_emb:
-            char_p = Variable(torch.LongTensor(data.characterize(s1)))
-            char_h = Variable(torch.LongTensor(data.characterize(s2)))
+            # limit the lengths of input sentences up to max_sent_len
+            if args.max_sent_len >= 0:
+                if s1.size()[1] > args.max_sent_len:
+                    s1 = s1[:, :args.max_sent_len]
+                if s2.size()[1] > args.max_sent_len:
+                    s2 = s2[:, :args.max_sent_len]
 
             if args.cuda:
-                char_p = char_p.cuda()
-                char_h = char_h.cuda()
+                s1, s2, label = s1.cuda(), s2.cuda(), label.cuda()
+            kwargs = {'p': s1, 'h': s2}
 
-            kwargs['char_p'] = char_p
-            kwargs['char_h'] = char_h
+            if args.use_char_emb:
+                char_p = Variable(torch.LongTensor(data.characterize(s1)))
+                char_h = Variable(torch.LongTensor(data.characterize(s2)))
 
-        pred = model(**kwargs)
+                if args.cuda:
+                    char_p = char_p.cuda()
+                    char_h = char_h.cuda()
 
-        optimizer.zero_grad()
+                kwargs['char_p'] = char_p
+                kwargs['char_h'] = char_h
 
-        loss = F.cross_entropy(pred, label)
-        loss += loss.data
-        loss.backward()
-        optimizer.step()
+            pred = model(**kwargs)
 
-        if (i + 1) % args.print_freq == 0:
-            dev_loss, dev_acc = test(model, args, data, mode='dev')
-            test_loss, test_acc = test(model, args, data)
-            c = (i + 1) // args.print_freq
+            optimizer.zero_grad()
 
-            writer.add_scalar('loss/train', loss, c)
-            writer.add_scalar('loss/dev', dev_loss, c)
-            writer.add_scalar('acc/dev', dev_acc, c)
-            writer.add_scalar('loss/test', test_loss, c)
-            writer.add_scalar('acc/test', test_acc, c)
+            loss = F.cross_entropy(pred, label)
+            loss += loss.data
+            loss.backward()
+            optimizer.step()
 
-            print(f'train loss: {loss:.3f} / dev loss: {dev_loss:.3f} / test loss: {test_loss:.3f}'
-                  f' / dev acc: {dev_acc:.3f} / test acc: {test_acc:.3f}')
+            if (i + 1) % args.print_freq == 0:
+                dev_loss, dev_acc = test(model, args, data, mode='dev')
+                test_loss, test_acc = test(model, args, data)
+                c = (i + 1) // args.print_freq
 
-            if dev_acc > max_dev_acc:
-                max_dev_acc = dev_acc
-                max_test_acc = test_acc
-                best_model = copy.deepcopy(model)
+                writer.add_scalar('loss/train', loss, c)
+                writer.add_scalar('loss/dev', dev_loss, c)
+                writer.add_scalar('acc/dev', dev_acc, c)
+                writer.add_scalar('loss/test', test_loss, c)
+                writer.add_scalar('acc/test', test_acc, c)
 
-            # loss = 0
-            model.train()
+                print(f'train loss: {loss:.3f} / dev loss: {dev_loss:.3f} / test loss: {test_loss:.3f}'
+                      f' / dev acc: {dev_acc:.3f} / test acc: {test_acc:.3f}')
+
+                if dev_acc > max_dev_acc:
+                    max_dev_acc = dev_acc
+                    max_test_acc = test_acc
+                    best_model = copy.deepcopy(model)
+
+                # loss = 0
+                model.train()
 
     writer.close()
     print(f'max dev acc: {max_dev_acc:.3f} / max test acc: {max_test_acc:.3f}')
@@ -143,6 +145,7 @@ def main():
 
     if not os.path.exists('saved_models'):
         os.makedirs('saved_models')
+    args.data_type = 'atec'
     torch.save(best_model.state_dict(), f'saved_models/BIBPM_{args.data_type}_{args.model_time}.pt')
 
     print('training finished!')

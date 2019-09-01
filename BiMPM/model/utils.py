@@ -3,6 +3,7 @@ from torchtext import datasets
 import re
 import jieba
 import logging
+from os.path import join as join_path,dirname
 
 jieba.setLogLevel(logging.INFO)
 
@@ -16,7 +17,7 @@ class DataSet(object):
         self.LABEL = data.Field(sequential=False, unk_token=None)
         self.TEXT.tokenize = self.word_cut
         self.train, self.dev, self.test = data.TabularDataset.splits(
-            path='data',
+            path=join_path(dirname(dirname(__file__)),'data'),
             train='train.tsv',
             validation='dev.tsv',
             test='test.tsv',
