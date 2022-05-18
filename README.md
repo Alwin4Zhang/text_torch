@@ -12,3 +12,4 @@ Todolist:Pytorch实现各种NN model
 | 06 | Siamese lstm |
 | 07 | ESIM |
 | 08 | BiLSTM_CRF |
+| 09 | SimCSE |
