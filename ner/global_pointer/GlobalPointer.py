@@ -197,10 +197,11 @@ class GlobalPointer(nn.Module):
         pad_mask = attention_mask.unsqueeze(1).unsqueeze(1).expand(batch_size, self.ent_type_size, seq_len, seq_len)
         # pad_mask_h = attention_mask.unsqueeze(1).unsqueeze(-1).expand(batch_size, self.ent_type_size, seq_len, seq_len)
         # pad_mask = pad_mask_v&pad_mask_h
-        logits = logits * pad_mask - (1 - pad_mask) * 1e12
+        logits = logits * pad_mask - (1 - pad_mask) * 1e12 # mask padding token
 
         # 排除下三角
         mask = torch.tril(torch.ones_like(logits), -1)
-        logits = logits - mask * 1e12
+        logits = logits - mask * 1e12 # mask 下三角（包含对角线）
 
+        # 类似transformer中的scale返回
         return logits / self.inner_dim ** 0.5
