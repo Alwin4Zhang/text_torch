@@ -13,3 +13,5 @@ Todolist:Pytorch实现各种NN model
 | 07 | ESIM |
 | 08 | BiLSTM_CRF |
 | 09 | SimCSE |
+| 10 | sentence_transformer |
+| 11 | global_pointer |
