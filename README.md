@@ -15,4 +15,4 @@ Todolist:Pytorch实现各种NN model
 | 10   | sentence transformer | [sentence-transformer](https://github.com/UKPLab/sentence-transformers) |
 | 11   | Global_pointer       | [[GlobalPointer：用统一的方式处理嵌套和非嵌套NER](https://kexue.fm/archives/8373)](https://kexue.fm/archives/8373) |
 | 12   | TPLinker             | [TPLinker: Single-stage Joint Extraction of Entities and Relations Through Token Pair Linking](https://arxiv.org/abs/2010.13415) |
-| 13   | LEAR                 | ["Enhanced Language Representation with Label Knowledge for Span Extraction"]( |
+| 13   | LEAR                 | [Enhanced Language Representation with Label Knowledge for Span Extraction](https://arxiv.org/pdf/2111.00884.pdf) |
