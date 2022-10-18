@@ -2,7 +2,7 @@
 Todolist:Pytorch实现各种NN model  
 目前已经实现:  
 
-| 序号 | 模型 |  
+| 序号 | 模型 |
 | :-----| :---- |  
 | 01 | fasttext |
 | 02 | textCNN |
@@ -16,3 +16,4 @@ Todolist:Pytorch实现各种NN model
 | 10 | sentence_transformer |
 | 11 | global_pointer |
 | 12 | TPLinker |
+| 13 | LEAR |
